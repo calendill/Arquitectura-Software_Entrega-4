@@ -4,10 +4,12 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import com.veterinariamuro.veterinaria.aplicacion.Dto.ClienteDto;
 import com.veterinariamuro.veterinaria.aplicacion.interfaces.IClienteServicio;
+import com.veterinariamuro.veterinaria.dominio.eventos.ClienteEventos;
 import com.veterinariamuro.veterinaria.dominio.model.Cliente;
 import com.veterinariamuro.veterinaria.infraestructura.dao.interfaces.IClienteDao;
 
@@ -15,10 +17,16 @@ import com.veterinariamuro.veterinaria.infraestructura.dao.interfaces.IClienteDa
 public class ClienteServicioImpl implements IClienteServicio {
 
     @Autowired
-    private IClienteDao clienteDao;
+    private ApplicationEventPublisher eventPublisher; 
+    // Para publicar eventos cuando se crea un cliente
+
+    @Autowired
+    private IClienteDao clienteDao; 
+    // DAO para acceder a la base de datos
 
     @Override
     public List<ClienteDto> obtenerTodos() {
+        // Obtiene todos los clientes y los convierte a DTO
         return clienteDao.obtenerTodos()
                 .stream()
                 .map(this::convertirADto)
@@ -27,6 +35,7 @@ public class ClienteServicioImpl implements IClienteServicio {
 
     @Override
     public ClienteDto obtenerPorId(long cedula) {
+        // Busca un cliente por su cédula y lo convierte a DTO, o retorna null si no existe
         return clienteDao.obtenerPorId(cedula)
                 .map(this::convertirADto)
                 .orElse(null);
@@ -34,19 +43,34 @@ public class ClienteServicioImpl implements IClienteServicio {
 
     @Override
     public ClienteDto CrearCliente(ClienteDto clienteDto) {
+        // 1️⃣ Convertir DTO a entidad
         Cliente cliente = convertirAEntidad(clienteDto);
+
+        // 2️⃣ Guardar en la base de datos
         clienteDao.GuardarCliente(cliente);
-        return clienteDto;
+
+        // 3️⃣ Crear DTO actualizado
+        ClienteDto clienteGuardadoDto = convertirADto(cliente);
+
+        // 4️⃣ Publicar evento de cliente creado
+        ClienteEventos evento = new ClienteEventos(this, clienteGuardadoDto);
+        eventPublisher.publishEvent(evento);
+
+        // 5️⃣ Devolver DTO guardado
+        return clienteGuardadoDto;
     }
 
     @Override
     public ClienteDto actualizar(ClienteDto clienteDto, Long cedula) {
+        // Buscar cliente por cédula
         Optional<Cliente> optCliente = clienteDao.obtenerPorId(cedula);
 
         if (optCliente.isEmpty()) {
-            throw new RuntimeException("El cliente no existe");
+            throw new RuntimeException("El cliente no existe"); 
+            // Lanza excepción si no se encuentra
         }
 
+        // Actualizar campos del cliente
         Cliente cliente = optCliente.get();
         cliente.setNombre(clienteDto.getNombre());
         cliente.setApellido1(clienteDto.getApellido1());
@@ -55,22 +79,25 @@ public class ClienteServicioImpl implements IClienteServicio {
         cliente.setCorreo(clienteDto.getCorreo());
         cliente.setDireccion(clienteDto.getDireccion());
 
-        clienteDao.actualizar(cliente);
-        return convertirADto(cliente);
+        clienteDao.actualizar(cliente); // Guardar cambios en la base de datos
+        return convertirADto(cliente); // Devolver DTO actualizado
     }
 
     @Override
     public String eliminarCliente(long cedula) {
+        // Buscar cliente por cédula
         Optional<Cliente> cliente = clienteDao.obtenerPorId(cedula);
         if (cliente.isPresent()) {
-            clienteDao.eliminarCliente(cliente.get());
+            clienteDao.eliminarCliente(cliente.get()); // Eliminar si existe
             return "Cliente con cédula " + cedula + " eliminado";
         }
-        return "Cliente con cédula " + cedula + " no encontrado";
+        return "Cliente con cédula " + cedula + " no encontrado"; // Retornar mensaje si no existe
     }
 
-    // ✅ Métodos privados de conversión usando Builder
+    // ✅ Métodos privados de conversión
+
     private ClienteDto convertirADto(Cliente cliente) {
+        // Convierte entidad Cliente a DTO usando builder
         return ClienteDto.builder()
                 .cedula(cliente.getCedula())
                 .nombre(cliente.getNombre())
@@ -83,6 +110,7 @@ public class ClienteServicioImpl implements IClienteServicio {
     }
 
     private Cliente convertirAEntidad(ClienteDto dto) {
+        // Convierte DTO a entidad Cliente usando builder
         return Cliente.builder()
                 .cedula(dto.getCedula())
                 .nombre(dto.getNombre())

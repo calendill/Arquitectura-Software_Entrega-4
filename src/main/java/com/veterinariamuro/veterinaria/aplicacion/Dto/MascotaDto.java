@@ -21,15 +21,15 @@ public class MascotaDto implements Serializable{
     private String descripcion;
     private LocalDate proximaFechaVacunacion;
 
-    // 🔹 Tipo de mascota (PERRO o GATO)
+    // Tipo de mascota (PERRO o GATO)
     private String tipoAnimal;
 
-    // 🔹 Relación con cliente (opcional para el formulario)
+    // Relación con cliente (opcional para el formulario)
     private Long clienteId;
 
-    // 🔹 Campos específicos de perro
+    // Campos específicos de perro
     private String raza;
 
-    // 🔹 Campos específicos de gato
+    // Campos específicos de gato
     private String colorPelaje;
 }

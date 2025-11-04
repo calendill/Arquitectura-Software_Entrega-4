@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Formulario Mascota</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    body { background-color: #f8f9fa; }
+    .form-container {
+      max-width: 700px;
+      margin: 50px auto;
+      padding: 30px;
+      background-color: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    }
+    h2 { text-align: center; margin-bottom: 25px; color: #343a40; }
+    .btn-group-custom { display: flex; justify-content: space-between; gap: 10px; }
+  </style>
+</head>
+<body>
+
+<div class="form-container">
+  <h2 id="titulo">Registrar Mascota</h2>
+
+  <form id="formMascota">
+
+    <div class="mb-3">
+      <label class="form-label">Nombre</label>
+      <input type="text" id="nombre" class="form-control" required>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Fecha de nacimiento</label>
+      <input type="date" id="fechaNacimiento" class="form-control">
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Sexo</label>
+      <select id="sexo" class="form-select">
+        <option value="">Seleccione...</option>
+        <option value="MACHO">Macho</option>
+        <option value="HEMBRA">Hembra</option>
+      </select>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Descripción</label>
+      <textarea id="descripcion" class="form-control"></textarea>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Próxima fecha de vacunación</label>
+      <input type="date" id="proximaFechaVacunacion" class="form-control">
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Tipo de animal</label>
+      <select id="tipoAnimal" class="form-select" onchange="mostrarCamposEspecificos()" required>
+        <option value="">Seleccione...</option>
+        <option value="PERRO">Perro</option>
+        <option value="GATO">Gato</option>
+      </select>
+    </div>
+
+    <div id="campoRaza" class="mb-3" style="display:none;">
+      <label class="form-label">Raza (solo perros)</label>
+      <input type="text" id="raza" class="form-control">
+    </div>
+
+    <div id="campoColor" class="mb-3" style="display:none;">
+      <label class="form-label">Color de pelaje (solo gatos)</label>
+      <input type="text" id="colorPelaje" class="form-control">
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Cliente propietario</label>
+      <select id="clienteId" class="form-select" required>
+        <option value="">Seleccione un cliente...</option>
+      </select>
+    </div>
+
+    <div class="btn-group-custom mt-4">
+      <a href="index.html" class="btn btn-secondary">🏠 Volver al Inicio</a>
+      <a href="listar_mascotas.html" class="btn btn-info text-white">📋 Ver Lista de Mascotas</a>
+      <button type="submit" id="btnGuardar" class="btn btn-success">Guardar Mascota</button>
+    </div>
+  </form>
+</div>
+
+<script>
+const API_URL = "http://localhost:9090/api/mascotas"; // ⚡ Ajuste aquí a /mascotas
+const API_CLIENTES = "http://localhost:9090/api/clientes"; // Endpoint clientes
+
+// Cargar clientes al select
+async function cargarClientes() {
+  try {
+    const resp = await fetch(API_CLIENTES);
+    if (!resp.ok) throw new Error("No se pudo obtener la lista de clientes");
+    const clientes = await resp.json();
+
+    const select = document.getElementById("clienteId");
+    select.innerHTML = '<option value="">Seleccione un cliente...</option>';
+
+    clientes.forEach(c => {
+      const option = document.createElement("option");
+      option.value = c.id || c.cedula; // Ajusta según tu modelo Cliente
+      option.textContent = `${c.nombre} ${c.apellido1 || ''}`;
+      select.appendChild(option);
+    });
+  } catch (error) {
+    console.error(error);
+    alert("Error cargando los clientes.");
+  }
+}
+
+// Mostrar campos según tipo de animal
+function mostrarCamposEspecificos() {
+  const tipo = document.getElementById("tipoAnimal").value;
+  document.getElementById("campoRaza").style.display = tipo === "PERRO" ? "block" : "none";
+  document.getElementById("campoColor").style.display = tipo === "GATO" ? "block" : "none";
+
+  if(tipo !== "PERRO") document.getElementById("raza").value = "";
+  if(tipo !== "GATO") document.getElementById("colorPelaje").value = "";
+}
+
+// Guardar o actualizar mascota
+async function guardarMascota(event) {
+  event.preventDefault();
+
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get("id"); // Para edición
+  const method = id ? "PUT" : "POST";
+  const url = id ? `${API_URL}/${id}` : API_URL;
+
+  const mascota = {
+    nombre: document.getElementById("nombre").value,
+    fechaNacimiento: document.getElementById("fechaNacimiento").value || null,
+    sexo: document.getElementById("sexo").value,
+    descripcion: document.getElementById("descripcion").value,
+    proximaFechaVacunacion: document.getElementById("proximaFechaVacunacion").value || null,
+    tipoAnimal: document.getElementById("tipoAnimal").value,
+    raza: document.getElementById("raza").value || null,
+    colorPelaje: document.getElementById("colorPelaje").value || null,
+    clienteId: parseInt(document.getElementById("clienteId").value)
+  };
+
+  try {
+    const resp = await fetch(url, {
+      method: method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(mascota)
+    });
+
+    if (resp.ok) {
+      alert(`Mascota ${id ? 'actualizada' : 'guardada'} correctamente`);
+      window.location.href = "listar_mascotas.html";
+    } else {
+      const errorText = await resp.text();
+      console.error(errorText);
+      alert("Error guardando la mascota. Ver consola.");
+    }
+  } catch (error) {
+    console.error(error);
+    alert("Error de conexión con la API");
+  }
+}
+
+// Cargar mascota si se está editando
+async function cargarMascotaSiExiste() {
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get("id");
+  if (!id) return;
+
+  document.getElementById("titulo").textContent = "Editar Mascota";
+  document.getElementById("btnGuardar").textContent = "Actualizar Mascota";
+
+  try {
+    const resp = await fetch(`${API_URL}/${id}`);
+    if (!resp.ok) throw new Error("Mascota no encontrada");
+    const m = await resp.json();
+
+    document.getElementById("nombre").value = m.nombre;
+    document.getElementById("fechaNacimiento").value = m.fechaNacimiento || '';
+    document.getElementById("sexo").value = m.sexo;
+    document.getElementById("descripcion").value = m.descripcion;
+    document.getElementById("proximaFechaVacunacion").value = m.proximaFechaVacunacion || '';
+    document.getElementById("tipoAnimal").value = m.tipoAnimal;
+    mostrarCamposEspecificos();
+    document.getElementById("raza").value = m.raza || '';
+    document.getElementById("colorPelaje").value = m.colorPelaje || '';
+    document.getElementById("clienteId").value = m.clienteId;
+  } catch (error) {
+    console.error(error);
+    alert("Error cargando la mascota");
+  }
+}
+
+// Inicialización
+window.onload = () => {
+  cargarClientes();
+  cargarMascotaSiExiste();
+  document.getElementById("formMascota").addEventListener("submit", guardarMascota);
+};
+</script>
+
+</body>
+</html>
