@@ -1,15 +1,19 @@
 package com.veterinariamuro.veterinaria.aplicacion.servicios;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
-import com.veterinariamuro.veterinaria.aplicacion.Dto.MascotaDto;
+import com.veterinariamuro.veterinaria.aplicacion.Dto.mascotaDto.MascotaRequestDto;
+import com.veterinariamuro.veterinaria.aplicacion.Dto.mascotaDto.MascotaResponseDto;
 import com.veterinariamuro.veterinaria.aplicacion.interfaces.IMascotaServicio;
+import com.veterinariamuro.veterinaria.dominio.factory.Gato;
 import com.veterinariamuro.veterinaria.dominio.factory.MascotaFactory;
+import com.veterinariamuro.veterinaria.dominio.factory.Perro;
 import com.veterinariamuro.veterinaria.dominio.model.Cliente;
 import com.veterinariamuro.veterinaria.dominio.model.Mascota;
 import com.veterinariamuro.veterinaria.infraestructura.dao.interfaces.IClienteDao;
@@ -19,72 +23,78 @@ import com.veterinariamuro.veterinaria.infraestructura.dao.interfaces.IMascotaDa
 public class MascotaServicioImpl implements IMascotaServicio {
 
     @Autowired
-    private IMascotaDao mascotaDao; 
-    // DAO para acceder a la base de datos de mascotas
+    private IMascotaDao mascotaDao;
 
     @Autowired
-    private IClienteDao clienteDao; 
-    // DAO para acceder a los clientes (necesario para asociar mascotas a clientes)
+    private IClienteDao clienteDao;
 
+  
     @Override
-    public List<MascotaDto> obtenerTodas() {
-        // Obtiene todas las mascotas y las convierte a DTO usando el Factory
+    public List<MascotaResponseDto> obtenerTodas() {
         return mascotaDao.obtenerTodas()
                 .stream()
-                .map(MascotaFactory::crearDtoDesdeEntidad)
+                .map(MascotaFactory::crearResponseDtoDesdeEntidad)
                 .collect(Collectors.toList());
     }
 
+
     @Override
-    public MascotaDto obtenerPorId(Long id) {
-        // Busca una mascota por ID y la convierte a DTO, o devuelve null si no existe
-        return mascotaDao.obtenerPorId(id)
-                .map(MascotaFactory::crearDtoDesdeEntidad)
-                .orElse(null);
+    public MascotaResponseDto obtenerPorId(Long id) {
+        Mascota mascota = mascotaDao.obtenerPorId(id)
+                .orElseThrow(() ->
+                        new ResponseStatusException(HttpStatus.NOT_FOUND, "Mascota no encontrada")
+                );
+        return MascotaFactory.crearResponseDtoDesdeEntidad(mascota);
     }
 
     @Override
-    public MascotaDto crearMascota(MascotaDto mascotaDto) {
-        // Busca el cliente al que pertenece la mascota
-        Cliente cliente = clienteDao.obtenerPorId(mascotaDto.getClienteId())
-                .orElseThrow(() -> new RuntimeException("Cliente no encontrado"));
+    public MascotaResponseDto crearMascota(MascotaRequestDto requestDto) {
+        Cliente cliente = clienteDao.obtenerPorId(requestDto.getClienteId())
+                .orElseThrow(() ->
+                        new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente no encontrado")
+                );
 
-        // Crea la entidad Mascota (Perro o Gato) usando el Factory
-        Mascota mascota = MascotaFactory.crearDesdeDto(mascotaDto, cliente);
-        mascotaDao.guardar(mascota); // Guarda en la base de datos
+        Mascota mascota = MascotaFactory.crearDesdeRequestDto(requestDto, cliente);
+        mascotaDao.guardar(mascota);
 
-        // Devuelve el DTO actualizado
-        return MascotaFactory.crearDtoDesdeEntidad(mascota);
+        return MascotaFactory.crearResponseDtoDesdeEntidad(mascota);
     }
 
+
     @Override
-    public MascotaDto actualizarMascota(Long id, MascotaDto dto) {
-        Optional<Mascota> optMascota = mascotaDao.obtenerPorId(id);
-        if (optMascota.isEmpty()) {
-            throw new RuntimeException("Mascota no encontrada"); // Manejo de error
+    public MascotaResponseDto actualizarMascota(Long id, MascotaRequestDto requestDto) {
+        Mascota mascota = mascotaDao.obtenerPorId(id)
+                .orElseThrow(() ->
+                        new ResponseStatusException(HttpStatus.NOT_FOUND, "Mascota no encontrada")
+                );
+
+        // Actualiza atributos generales
+        mascota.setNombre(requestDto.getNombre());
+        mascota.setDescripcion(requestDto.getDescripcion());
+        mascota.setSexo(requestDto.getSexo());
+        mascota.setFechaNacimiento(requestDto.getFechaNacimiento());
+
+        // Atributos específicos según tipo
+        switch (mascota) {
+            case Perro perro -> perro.setRaza(requestDto.getRaza());
+            case Gato gato -> gato.setColorPelaje(requestDto.getColorPelaje());
+            default -> {
+            }
         }
 
-        // Actualiza los atributos generales de la mascota
-        Mascota mascota = optMascota.get();
-        mascota.setNombre(dto.getNombre());
-        mascota.setDescripcion(dto.getDescripcion());
-        mascota.setSexo(dto.getSexo());
-        mascota.setFechaNacimiento(dto.getFechaNacimiento());
-
-        // Los atributos específicos (raza, colorPelaje) se manejan en el Factory si es necesario
         mascotaDao.actualizar(mascota);
-        return MascotaFactory.crearDtoDesdeEntidad(mascota); // Devuelve DTO actualizado
+        return MascotaFactory.crearResponseDtoDesdeEntidad(mascota);
     }
+
 
     @Override
     public String eliminarMascota(Long id) {
-        // Busca mascota por ID
-        Optional<Mascota> mascota = mascotaDao.obtenerPorId(id);
-        if (mascota.isPresent()) {
-            mascotaDao.eliminar(mascota.get()); // Elimina si existe
-            return "Mascota eliminada correctamente";
-        }
-        return "Mascota no encontrada"; // Retorna mensaje si no existe
+        Mascota mascota = mascotaDao.obtenerPorId(id)
+                .orElseThrow(() ->
+                        new ResponseStatusException(HttpStatus.NOT_FOUND, "Mascota no encontrada")
+                );
+
+        mascotaDao.eliminar(mascota);
+        return "Mascota eliminada correctamente";
     }
 }
-

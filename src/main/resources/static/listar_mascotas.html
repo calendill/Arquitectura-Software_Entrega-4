@@ -64,7 +64,11 @@ async function cargarMascotas() {
     mascotas.forEach(m => {
       const fila = document.createElement("tr");
 
+      // Mostrar raza si es perro, color si es otro tipo
       const detalleTipo = m.tipoAnimal === "PERRO" ? m.raza || "" : m.colorPelaje || "";
+
+      // Mostrar cliente: "ID - Nombre" o vacío si no existe
+      const clienteTexto = m.cliente ? `${m.cliente.cedula} - ${m.cliente.nombre}` : '';
 
       fila.innerHTML = `
         <td>${m.id}</td>
@@ -73,7 +77,8 @@ async function cargarMascotas() {
         <td>${detalleTipo}</td>
         <td>${m.sexo}</td>
         <td>${m.proximaFechaVacunacion || ''}</td>
-        <td>${m.clienteNombre || ''}</td>
+        <td>${m.clienteId || ''}</td>
+
         <td>
           <a href="form_mascota.html?id=${m.id}" class="btn btn-sm btn-warning mb-1">✏️ Editar</a>
           <button class="btn btn-sm btn-danger" onclick="eliminarMascota(${m.id})">🗑️ Eliminar</button>
@@ -107,6 +112,7 @@ async function eliminarMascota(id) {
   }
 }
 
+// Cargar mascotas al iniciar la página
 window.onload = cargarMascotas;
 </script>
 

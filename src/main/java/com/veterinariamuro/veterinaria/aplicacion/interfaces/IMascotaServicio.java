@@ -2,17 +2,18 @@ package com.veterinariamuro.veterinaria.aplicacion.interfaces;
 
 import java.util.List;
 
-import com.veterinariamuro.veterinaria.aplicacion.Dto.MascotaDto;
+import com.veterinariamuro.veterinaria.aplicacion.Dto.mascotaDto.MascotaRequestDto;
+import com.veterinariamuro.veterinaria.aplicacion.Dto.mascotaDto.MascotaResponseDto;
 
 public interface IMascotaServicio {
 
-    List<MascotaDto> obtenerTodas();
+    List<MascotaResponseDto> obtenerTodas();
 
-    MascotaDto obtenerPorId(Long id);
+    MascotaResponseDto obtenerPorId(Long id);
 
-    MascotaDto crearMascota(MascotaDto dto);
+    MascotaResponseDto crearMascota(MascotaRequestDto requestDto);
 
-    MascotaDto actualizarMascota(Long id, MascotaDto dto);
+    MascotaResponseDto actualizarMascota(Long id, MascotaRequestDto requestDto);
 
     String eliminarMascota(Long id);
 }

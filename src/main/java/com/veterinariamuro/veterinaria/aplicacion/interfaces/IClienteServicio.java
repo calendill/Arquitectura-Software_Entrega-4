@@ -2,16 +2,19 @@ package com.veterinariamuro.veterinaria.aplicacion.interfaces;
 
 import java.util.List;
 
-import com.veterinariamuro.veterinaria.aplicacion.Dto.ClienteDto;
+import com.veterinariamuro.veterinaria.aplicacion.Dto.clienteDto.ClienteRequestDto;
+import com.veterinariamuro.veterinaria.aplicacion.Dto.clienteDto.ClienteResponseDto;
 
 public interface IClienteServicio {
 
+    List<ClienteResponseDto> obtenerTodos();
 
-    
-     List<ClienteDto> obtenerTodos();
-     ClienteDto obtenerPorId(long cedula);
-     ClienteDto CrearCliente(ClienteDto clienteDto);
-     ClienteDto actualizar(ClienteDto clienteDto, Long cedula);
-     String eliminarCliente(long cedula);
-    
+    ClienteResponseDto obtenerPorId(long cedula);
+
+    ClienteResponseDto crearCliente(ClienteRequestDto clienteRequestDto);
+
+    ClienteResponseDto actualizar(ClienteRequestDto clienteRequestDto, Long cedula);
+
+    String eliminarCliente(long cedula);
 }
+

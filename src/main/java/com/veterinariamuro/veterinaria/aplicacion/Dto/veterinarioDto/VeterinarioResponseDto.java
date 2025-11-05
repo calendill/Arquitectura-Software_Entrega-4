@@ -1,6 +1,4 @@
-package com.veterinariamuro.veterinaria.aplicacion.Dto;
-
-import java.io.Serializable;
+package com.veterinariamuro.veterinaria.aplicacion.Dto.veterinarioDto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,16 +7,16 @@ import lombok.NoArgsConstructor;
 
 @Data
 @Builder
-@NoArgsConstructor
+@NoArgsConstructor 
 @AllArgsConstructor
-public class ClienteDto implements Serializable {
+public class VeterinarioResponseDto {
 
     private Long cedula;
     private String nombre;
     private String apellido1;
     private String apellido2;
-    private Long telefono;
+    private int telefono;
     private String direccion;
     private String correo;
-    
+
 }

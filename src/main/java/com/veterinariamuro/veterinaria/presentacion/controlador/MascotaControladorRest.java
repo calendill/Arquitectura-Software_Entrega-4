@@ -14,79 +14,199 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.veterinariamuro.veterinaria.aplicacion.Dto.ClienteDto;
-import com.veterinariamuro.veterinaria.aplicacion.Dto.MascotaDto;
+import com.veterinariamuro.veterinaria.aplicacion.Dto.ErrorResponse;
+import com.veterinariamuro.veterinaria.aplicacion.Dto.clienteDto.ClienteResponseDto;
+import com.veterinariamuro.veterinaria.aplicacion.Dto.mascotaDto.MascotaRequestDto;
+import com.veterinariamuro.veterinaria.aplicacion.Dto.mascotaDto.MascotaResponseDto;
 import com.veterinariamuro.veterinaria.aplicacion.interfaces.IClienteServicio;
 import com.veterinariamuro.veterinaria.aplicacion.interfaces.IMascotaServicio;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 @RestController
 @RequestMapping("/api/mascotas")
+@Tag(name = "Mascotas", description = "Operaciones relacionadas con las mascotas de la veterinaria")
 public class MascotaControladorRest {
 
     @Autowired
     private IMascotaServicio mascotaServicio;
-    // Servicio que maneja la lógica de negocio de mascotas
 
     @Autowired
     private IClienteServicio clienteServicio;
-    // Servicio que maneja la lógica de negocio de clientes (solo para listar)
 
-    // ✅ Lista todas las mascotas
+    // -----------------------
+    // ✅ Listar todas las mascotas
+    // -----------------------
     @GetMapping
-    public List<MascotaDto> listarMascotas() {
-        // Retorna todas las mascotas en formato JSON
-        return mascotaServicio.obtenerTodas();
+    @Operation(summary = "Listar todas las mascotas", description = "Obtiene todas las mascotas registradas en el sistema")
+    @ApiResponse(responseCode = "200", description = "Lista obtenida correctamente")
+    public ResponseEntity<List<MascotaResponseDto>> listarMascotas() {
+        List<MascotaResponseDto> mascotas = mascotaServicio.obtenerTodas();
+        return ResponseEntity.ok(mascotas);
     }
 
-    // ✅ Obtener mascota por id
+    // -----------------------
+    // ✅ Obtener mascota por ID
+    // -----------------------
     @GetMapping("/{id}")
-    public ResponseEntity<MascotaDto> obtenerMascota(@PathVariable Long id) {
-        // Busca una mascota por su id
-        MascotaDto mascota = mascotaServicio.obtenerPorId(id);
+    @Operation(summary = "Obtener mascota por ID", description = "Recupera la información de una mascota específica por su identificador")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Mascota encontrada",
+            content = @Content(mediaType = "application/json",
+                examples = @ExampleObject(value = """
+                    {
+                      "id": 1,
+                      "nombre": "Rocky",
+                      "fechaNacimiento": "2020-05-12",
+                      "sexo": "Macho",
+                      "descripcion": "Perro activo y amigable",
+                      "proximaFechaVacunacion": "2025-12-01",
+                      "tipoAnimal": "Perro",
+                      "clienteId": 1001,
+                      "raza": "Labrador",
+                      "colorPelaje": "Dorado"
+                    }
+                """))),
+        @ApiResponse(responseCode = "404", description = "Mascota no encontrada",
+            content = @Content(mediaType = "application/json",
+                schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ErrorResponse.class),
+                examples = @ExampleObject(value = """
+                    {
+                      "status": 404,
+                      "message": "Mascota con ID 99 no encontrada",
+                      "path": "/api/mascotas/99",
+                      "timestamp": "2025-11-04T19:20:00"
+                    }
+                """)))
+    })
+    public ResponseEntity<MascotaResponseDto> obtenerMascota(
+            @Parameter(description = "ID de la mascota", required = true)
+            @PathVariable Long id) {
+
+        MascotaResponseDto mascota = mascotaServicio.obtenerPorId(id);
         if (mascota != null) {
-            return ResponseEntity.ok(mascota); // Si existe, retorna 200 OK
+            return ResponseEntity.ok(mascota);
         } else {
-            return ResponseEntity.notFound().build(); // Si no existe, 404
+            throw new RuntimeException("Mascota con ID " + id + " no encontrada");
         }
     }
 
+    // -----------------------
     // ✅ Crear nueva mascota
+    // -----------------------
     @PostMapping
-    public ResponseEntity<MascotaDto> guardarMascota(@RequestBody MascotaDto mascotaDto) {
-        // Crea una nueva mascota usando los datos recibidos en JSON
-        MascotaDto creada = mascotaServicio.crearMascota(mascotaDto);
-        return new ResponseEntity<>(creada, HttpStatus.CREATED); 
-        // Retorna 201 CREATED con la mascota creada
+    @Operation(summary = "Crear nueva mascota", description = "Registra una nueva mascota en el sistema")
+    @ApiResponses({
+        @ApiResponse(responseCode = "201", description = "Mascota creada correctamente",
+            content = @Content(mediaType = "application/json",
+                examples = @ExampleObject(value = """
+                    {
+                      "id": 10,
+                      "nombre": "Luna",
+                      "fechaNacimiento": "2021-01-15",
+                      "sexo": "Hembra",
+                      "descripcion": "Gata doméstica cariñosa",
+                      "proximaFechaVacunacion": "2026-01-15",
+                      "tipoAnimal": "Gato",
+                      "clienteId": 1002,
+                      "raza": "Siamesa",
+                      "colorPelaje": "Blanco"
+                    }
+                """))),
+        @ApiResponse(responseCode = "400", description = "Datos de entrada inválidos",
+            content = @Content(mediaType = "application/json",
+                schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ErrorResponse.class),
+                examples = @ExampleObject(value = """
+                    {
+                      "status": 400,
+                      "message": "El campo 'nombre' no puede estar vacío",
+                      "path": "/api/mascotas",
+                      "timestamp": "2025-11-04T19:22:00"
+                    }
+                """)))
+    })
+    public ResponseEntity<MascotaResponseDto> guardarMascota(@RequestBody MascotaRequestDto requestDto) {
+        MascotaResponseDto creada = mascotaServicio.crearMascota(requestDto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(creada);
     }
 
-    // ✅ Actualizar mascota
+    // -----------------------
+    // ✅ Actualizar mascota existente
+    // -----------------------
     @PutMapping("/{id}")
-    public ResponseEntity<MascotaDto> actualizarMascota(@PathVariable Long id, @RequestBody MascotaDto mascotaDto) {
-        // Actualiza la mascota indicada por id
-        MascotaDto actualizada = mascotaServicio.actualizarMascota(id, mascotaDto);
+    @Operation(summary = "Actualizar mascota existente", description = "Actualiza los datos de una mascota registrada")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Mascota actualizada correctamente"),
+        @ApiResponse(responseCode = "404", description = "Mascota no encontrada",
+            content = @Content(mediaType = "application/json",
+                schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ErrorResponse.class),
+                examples = @ExampleObject(value = """
+                    {
+                      "status": 404,
+                      "message": "Mascota con ID 88 no encontrada",
+                      "path": "/api/mascotas/88",
+                      "timestamp": "2025-11-04T19:25:00"
+                    }
+                """)))
+    })
+    public ResponseEntity<MascotaResponseDto> actualizarMascota(
+            @Parameter(description = "ID de la mascota", required = true)
+            @PathVariable Long id,
+            @RequestBody MascotaRequestDto requestDto) {
+
+        MascotaResponseDto actualizada = mascotaServicio.actualizarMascota(id, requestDto);
         if (actualizada != null) {
-            return ResponseEntity.ok(actualizada); // 200 OK si se actualizó
+            return ResponseEntity.ok(actualizada);
         } else {
-            return ResponseEntity.notFound().build(); // 404 si no existe
+            throw new RuntimeException("Mascota con ID " + id + " no encontrada");
         }
     }
 
+    // -----------------------
     // ✅ Eliminar mascota
+    // -----------------------
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> eliminarMascota(@PathVariable Long id) {
-        // Elimina la mascota por id
-        String eliminado = mascotaServicio.eliminarMascota(id);
-        if (eliminado != null) {
-            return ResponseEntity.noContent().build(); // 204 No Content si se eliminó
+    @Operation(summary = "Eliminar mascota", description = "Elimina una mascota del sistema por su ID")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Mascota eliminada correctamente"),
+        @ApiResponse(responseCode = "404", description = "Mascota no encontrada",
+            content = @Content(mediaType = "application/json",
+                schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ErrorResponse.class),
+                examples = @ExampleObject(value = """
+                    {
+                      "status": 404,
+                      "message": "Mascota con ID 15 no encontrada",
+                      "path": "/api/mascotas/15",
+                      "timestamp": "2025-11-04T19:30:00"
+                    }
+                """)))
+    })
+    public ResponseEntity<Void> eliminarMascota(
+            @Parameter(description = "ID de la mascota", required = true)
+            @PathVariable Long id) {
+
+        String resultado = mascotaServicio.eliminarMascota(id);
+        if (resultado.contains("eliminada")) {
+            return ResponseEntity.noContent().build();
         } else {
-            return ResponseEntity.notFound().build(); // 404 si no existe
+            throw new RuntimeException("Mascota con ID " + id + " no encontrada");
         }
     }
 
-    // ✅ Lista todos los clientes (opcional)
+    // -----------------------
+    // ✅ Listar clientes relacionados (opcional)
+    // -----------------------
     @GetMapping("/clientes")
-    public List<ClienteDto> listarClientes() {
-        // Permite ver todos los clientes (opcional, útil para relaciones mascota-cliente)
-        return clienteServicio.obtenerTodos();
+    @Operation(summary = "Listar todos los clientes", description = "Obtiene todos los clientes registrados (para asignar mascotas)")
+    @ApiResponse(responseCode = "200", description = "Lista de clientes obtenida correctamente")
+    public ResponseEntity<List<ClienteResponseDto>> listarClientes() {
+        List<ClienteResponseDto> clientes = clienteServicio.obtenerTodos();
+        return ResponseEntity.ok(clientes);
     }
 }

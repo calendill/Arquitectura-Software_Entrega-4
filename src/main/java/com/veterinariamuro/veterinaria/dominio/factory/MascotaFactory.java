@@ -1,71 +1,71 @@
 package com.veterinariamuro.veterinaria.dominio.factory;
 
-import com.veterinariamuro.veterinaria.aplicacion.Dto.MascotaDto;
+import com.veterinariamuro.veterinaria.aplicacion.Dto.mascotaDto.MascotaRequestDto;
+import com.veterinariamuro.veterinaria.aplicacion.Dto.mascotaDto.MascotaResponseDto;
 import com.veterinariamuro.veterinaria.dominio.model.Cliente;
 import com.veterinariamuro.veterinaria.dominio.model.Mascota;
 
 public class MascotaFactory {
 
-    // Crea una entidad Mascota (Perro o Gato) a partir de un DTO y un Cliente
-    public static Mascota crearDesdeDto(MascotaDto dto, Cliente cliente) {
-        if ("PERRO".equalsIgnoreCase(dto.getTipoAnimal())) {
-            // Si es perro, creamos un objeto Perro con todos sus atributos
-            return new Perro(
-                    dto.getNombre(),
-                    dto.getFechaNacimiento(),
-                    dto.getSexo(),
-                    dto.getDescripcion(),
-                    dto.getProximaFechaVacunacion(),
-                    cliente,
-                    dto.getRaza()
+    // Método que crea una entidad Mascota (Perro o Gato) a partir de un DTO de request y un Cliente
+    public static Mascota crearDesdeRequestDto(MascotaRequestDto dto, Cliente cliente) {
+        // Determina el tipo de mascota y crea la instancia correspondiente usando switch expression
+        return switch (dto.getTipoAnimal().toUpperCase()) {
+            case "PERRO" -> new Perro(
+                    dto.getNombre(),                     // Nombre de la mascota
+                    dto.getFechaNacimiento(),            // Fecha de nacimiento
+                    dto.getSexo(),                       // Sexo (M/F)
+                    dto.getDescripcion(),                // Descripción opcional
+                    dto.getProximaFechaVacunacion(),     // Próxima fecha de vacunación
+                    cliente,                             // Cliente propietario
+                    dto.getRaza()                        // Raza específica de perro
             );
-        } else if ("GATO".equalsIgnoreCase(dto.getTipoAnimal())) {
-            // Si es gato, creamos un objeto Gato con sus atributos específicos
-            return new Gato(
-                    dto.getNombre(),
-                    dto.getFechaNacimiento(),
-                    dto.getSexo(),
-                    dto.getDescripcion(),
-                    dto.getProximaFechaVacunacion(),
-                    cliente,
-                    dto.getColorPelaje()
+            case "GATO" -> new Gato(
+                    dto.getNombre(),                     // Nombre de la mascota
+                    dto.getFechaNacimiento(),            // Fecha de nacimiento
+                    dto.getSexo(),                       // Sexo (M/F)
+                    dto.getDescripcion(),                // Descripción opcional
+                    dto.getProximaFechaVacunacion(),     // Próxima fecha de vacunación
+                    cliente,                             // Cliente propietario
+                    dto.getColorPelaje()                 // Color de pelaje específico de gato
             );
-        } else {
-            // Si el tipo no es reconocido, lanzamos una excepción
-            throw new IllegalArgumentException("Tipo de mascota desconocido: " + dto.getTipoAnimal());
-        }
+            // Si el tipo de mascota no es reconocido, lanza excepción para evitar datos inválidos
+            default -> throw new IllegalArgumentException("Tipo de mascota desconocido: " + dto.getTipoAnimal());
+        };
     }
 
-    // Convierte una entidad Mascota a un DTO para enviar al front-end
-    public static MascotaDto crearDtoDesdeEntidad(Mascota mascota) {
-        MascotaDto dto = new MascotaDto();
-        dto.setId(mascota.getId());
-        dto.setNombre(mascota.getNombre());
-        dto.setFechaNacimiento(mascota.getFechaNacimiento());
-        dto.setSexo(mascota.getSexo());
-        dto.setDescripcion(mascota.getDescripcion());
-        dto.setProximaFechaVacunacion(mascota.getProximaFechaVacunacion());
+    // Método que convierte una entidad Mascota a un DTO de response listo para enviar al front-end
+    public static MascotaResponseDto crearResponseDtoDesdeEntidad(Mascota mascota) {
+        MascotaResponseDto dto = new MascotaResponseDto();
 
-        // Guardamos solo el ID del cliente para no enviar toda la entidad
+        // Asignación de atributos comunes de todas las mascotas
+        dto.setId(mascota.getId());                         // ID de la mascota en la base de datos
+        dto.setNombre(mascota.getNombre());                 // Nombre
+        dto.setFechaNacimiento(mascota.getFechaNacimiento()); // Fecha de nacimiento
+        dto.setSexo(mascota.getSexo());                     // Sexo
+        dto.setDescripcion(mascota.getDescripcion());       // Descripción
+        dto.setProximaFechaVacunacion(mascota.getProximaFechaVacunacion()); // Próxima vacuna
+
+        // Guardamos solo el ID del cliente propietario para no exponer la entidad completa
         if (mascota.getCliente() != null) {
             dto.setClienteId(mascota.getCliente().getCedula());
         }
 
-        // Detectamos el tipo de mascota y asignamos los atributos específicos
+        // Asignación de atributos específicos según tipo de mascota
         switch (mascota) {
             case Perro perro -> {
-                dto.setTipoAnimal("PERRO");
-                dto.setRaza(perro.getRaza());
+                dto.setTipoAnimal("PERRO");  // Identifica el tipo
+                dto.setRaza(perro.getRaza()); // Raza específica de perro
             }
             case Gato gato -> {
-                dto.setTipoAnimal("GATO");
-                dto.setColorPelaje(gato.getColorPelaje());
+                dto.setTipoAnimal("GATO");      // Identifica el tipo
+                dto.setColorPelaje(gato.getColorPelaje()); // Color específico de gato
             }
             default -> {
-                // No hacemos nada si es otro tipo
             }
         }
 
-        return dto; // Retornamos el DTO listo para enviar al front-end
+        // Retorna el DTO completo listo para enviarlo al cliente
+        return dto;
     }
 }

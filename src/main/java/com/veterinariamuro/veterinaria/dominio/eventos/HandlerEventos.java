@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
-import com.veterinariamuro.veterinaria.aplicacion.Dto.ClienteDto;
+import com.veterinariamuro.veterinaria.aplicacion.Dto.clienteDto.ClienteResponseDto;
 
 @Component
 public class HandlerEventos {
@@ -21,7 +21,7 @@ public class HandlerEventos {
         ultimaFechaCreacion = evento.getFechaCreacion(); 
         // Guarda la fecha de creación del último cliente
 
-        ClienteDto cliente = evento.getCliente(); 
+        ClienteResponseDto cliente = evento.getCliente(); 
         // Obtenemos el cliente del evento
         System.out.println("🐾 Cliente creado: " + cliente.getNombre() + " a las " + ultimaFechaCreacion);
         // Mostramos un mensaje en consola (útil para debug o verificación)

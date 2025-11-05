@@ -7,10 +7,10 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import lombok.experimental.SuperBuilder;
+import lombok.Builder;
 
 
-@SuperBuilder
+@Builder
 @Entity
 @Table(name = "veterinarios")  
 public class Veterinario {

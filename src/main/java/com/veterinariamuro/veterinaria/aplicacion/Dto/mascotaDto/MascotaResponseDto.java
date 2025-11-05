@@ -1,4 +1,5 @@
-package com.veterinariamuro.veterinaria.aplicacion.Dto;
+package com.veterinariamuro.veterinaria.aplicacion.Dto.mascotaDto;
+
 
 import java.io.Serializable;
 import java.time.LocalDate;
@@ -12,7 +13,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class MascotaDto implements Serializable{
+public class MascotaResponseDto implements Serializable {
 
     private Long id;
     private String nombre;

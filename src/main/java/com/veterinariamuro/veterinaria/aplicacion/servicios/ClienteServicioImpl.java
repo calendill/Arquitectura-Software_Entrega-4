@@ -7,7 +7,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
-import com.veterinariamuro.veterinaria.aplicacion.Dto.ClienteDto;
+import com.veterinariamuro.veterinaria.aplicacion.Dto.clienteDto.ClienteRequestDto;
+import com.veterinariamuro.veterinaria.aplicacion.Dto.clienteDto.ClienteResponseDto;
 import com.veterinariamuro.veterinaria.aplicacion.interfaces.IClienteServicio;
 import com.veterinariamuro.veterinaria.dominio.eventos.ClienteEventos;
 import com.veterinariamuro.veterinaria.dominio.model.Cliente;
@@ -17,88 +18,75 @@ import com.veterinariamuro.veterinaria.infraestructura.dao.interfaces.IClienteDa
 public class ClienteServicioImpl implements IClienteServicio {
 
     @Autowired
-    private ApplicationEventPublisher eventPublisher; 
-    // Para publicar eventos cuando se crea un cliente
+    private ApplicationEventPublisher eventPublisher;
 
     @Autowired
-    private IClienteDao clienteDao; 
-    // DAO para acceder a la base de datos
+    private IClienteDao clienteDao;
 
     @Override
-    public List<ClienteDto> obtenerTodos() {
-        // Obtiene todos los clientes y los convierte a DTO
+    public List<ClienteResponseDto> obtenerTodos() {
         return clienteDao.obtenerTodos()
                 .stream()
-                .map(this::convertirADto)
+                .map(this::convertirAResponseDto)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public ClienteDto obtenerPorId(long cedula) {
-        // Busca un cliente por su cédula y lo convierte a DTO, o retorna null si no existe
+    public ClienteResponseDto obtenerPorId(long cedula) {
         return clienteDao.obtenerPorId(cedula)
-                .map(this::convertirADto)
+                .map(this::convertirAResponseDto)
                 .orElse(null);
     }
 
     @Override
-    public ClienteDto CrearCliente(ClienteDto clienteDto) {
-        // 1️⃣ Convertir DTO a entidad
-        Cliente cliente = convertirAEntidad(clienteDto);
-
-        // 2️⃣ Guardar en la base de datos
+    public ClienteResponseDto crearCliente(ClienteRequestDto requestDto) {
+        Cliente cliente = convertirAEntidad(requestDto);
         clienteDao.GuardarCliente(cliente);
 
-        // 3️⃣ Crear DTO actualizado
-        ClienteDto clienteGuardadoDto = convertirADto(cliente);
+        ClienteResponseDto responseDto = convertirAResponseDto(cliente);
 
-        // 4️⃣ Publicar evento de cliente creado
-        ClienteEventos evento = new ClienteEventos(this, clienteGuardadoDto);
+        // Publicar evento
+        ClienteEventos evento = new ClienteEventos(this, responseDto);
         eventPublisher.publishEvent(evento);
 
-        // 5️⃣ Devolver DTO guardado
-        return clienteGuardadoDto;
+        return responseDto;
     }
 
     @Override
-    public ClienteDto actualizar(ClienteDto clienteDto, Long cedula) {
-        // Buscar cliente por cédula
+    public ClienteResponseDto actualizar(ClienteRequestDto requestDto, Long cedula) {
         Optional<Cliente> optCliente = clienteDao.obtenerPorId(cedula);
 
         if (optCliente.isEmpty()) {
-            throw new RuntimeException("El cliente no existe"); 
-            // Lanza excepción si no se encuentra
+            throw new RuntimeException("El cliente no existe");
         }
 
-        // Actualizar campos del cliente
         Cliente cliente = optCliente.get();
-        cliente.setNombre(clienteDto.getNombre());
-        cliente.setApellido1(clienteDto.getApellido1());
-        cliente.setApellido2(clienteDto.getApellido2());
-        cliente.setTelefono(clienteDto.getTelefono());
-        cliente.setCorreo(clienteDto.getCorreo());
-        cliente.setDireccion(clienteDto.getDireccion());
+        cliente.setNombre(requestDto.getNombre());
+        cliente.setApellido1(requestDto.getApellido1());
+        cliente.setApellido2(requestDto.getApellido2());
+        cliente.setTelefono(requestDto.getTelefono());
+        cliente.setCorreo(requestDto.getCorreo());
+        cliente.setDireccion(requestDto.getDireccion());
 
-        clienteDao.actualizar(cliente); // Guardar cambios en la base de datos
-        return convertirADto(cliente); // Devolver DTO actualizado
+        clienteDao.actualizar(cliente);
+
+        return convertirAResponseDto(cliente);
     }
 
     @Override
     public String eliminarCliente(long cedula) {
-        // Buscar cliente por cédula
         Optional<Cliente> cliente = clienteDao.obtenerPorId(cedula);
         if (cliente.isPresent()) {
-            clienteDao.eliminarCliente(cliente.get()); // Eliminar si existe
+            clienteDao.eliminarCliente(cliente.get());
             return "Cliente con cédula " + cedula + " eliminado";
         }
-        return "Cliente con cédula " + cedula + " no encontrado"; // Retornar mensaje si no existe
+        return "Cliente con cédula " + cedula + " no encontrado";
     }
 
-    // ✅ Métodos privados de conversión
+    // 🔹 Métodos privados de conversión
 
-    private ClienteDto convertirADto(Cliente cliente) {
-        // Convierte entidad Cliente a DTO usando builder
-        return ClienteDto.builder()
+    private ClienteResponseDto convertirAResponseDto(Cliente cliente) {
+        return ClienteResponseDto.builder()
                 .cedula(cliente.getCedula())
                 .nombre(cliente.getNombre())
                 .apellido1(cliente.getApellido1())
@@ -109,10 +97,9 @@ public class ClienteServicioImpl implements IClienteServicio {
                 .build();
     }
 
-    private Cliente convertirAEntidad(ClienteDto dto) {
-        // Convierte DTO a entidad Cliente usando builder
+    private Cliente convertirAEntidad(ClienteRequestDto dto) {
         return Cliente.builder()
-                .cedula(dto.getCedula())
+        .cedula(dto.getCedula())
                 .nombre(dto.getNombre())
                 .apellido1(dto.getApellido1())
                 .apellido2(dto.getApellido2())

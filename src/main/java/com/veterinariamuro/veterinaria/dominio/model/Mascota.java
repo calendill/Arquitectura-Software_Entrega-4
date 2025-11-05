@@ -2,6 +2,9 @@ package com.veterinariamuro.veterinaria.dominio.model;
 
 import java.time.LocalDate;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorColumn;
 import jakarta.persistence.Entity;
@@ -18,6 +21,12 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.PastOrPresent;
 import lombok.experimental.SuperBuilder;
 
+
+
+@JsonIdentityInfo(
+        generator = ObjectIdGenerators.PropertyGenerator.class,
+        property = "id"
+)
 @SuperBuilder 
 @Entity
 @Table(name = "mascotas")
@@ -143,8 +152,6 @@ public  class Mascota {
     public void setCliente(Cliente cliente) {
         this.cliente = cliente;
     }
-
-
     
 
 }
